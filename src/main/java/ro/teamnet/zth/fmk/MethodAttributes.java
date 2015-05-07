@@ -1,5 +1,8 @@
 package ro.teamnet.zth.fmk;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * MethodAttributes.java
  */
@@ -8,6 +11,7 @@ public class MethodAttributes {
     String controllerClass;
     String methodName;
     String methodType;
+    Class<?>[] methodParams;
 
     public String getControllerClass() {
         return controllerClass;
@@ -31,6 +35,14 @@ public class MethodAttributes {
 
     public void setMethodType(String methodType) {
         this.methodType = methodType;
+    }
+
+    public Class<?>[] getMethodParams() {
+        return methodParams;
+    }
+
+    public void setMethodParams(Class<?>[] methodParams) {
+        this.methodParams = methodParams;
     }
 
     @Override
@@ -64,4 +76,5 @@ public class MethodAttributes {
         result = 31 * result + (methodType != null ? methodType.hashCode() : 0);
         return result;
     }
+
 }

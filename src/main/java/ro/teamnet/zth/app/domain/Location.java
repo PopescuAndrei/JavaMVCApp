@@ -81,5 +81,14 @@ public class Location {
         return true;
     }
 
-
+    @Override
+    public String toString() {
+        return "Location{" +
+                "id=" + id +
+                ", streetAddress='" + streetAddress + '\'' +
+                ", postalCode='" + postalCode + '\'' +
+                ", city='" + city + '\'' +
+                ", stateProvince='" + stateProvince + '\'' +
+                '}';
+    }
 }

@@ -23,6 +23,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-jaxrs</artifactId>
+            <version>${jackson-jaxrs.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.11</version>
@@ -53,9 +59,10 @@
                 <version>2.0</version>
                 <configuration>
                     <path>/app</path>
+                    <port>8082</port>
                 </configuration>
             </plugin>
         </plugins>
     </build>
-    
+
 </project>

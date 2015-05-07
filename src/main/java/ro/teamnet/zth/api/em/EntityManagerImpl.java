@@ -1,5 +1,9 @@
 package ro.teamnet.zth.api.em;
 
+import ro.teamnet.zth.api.annotations.Id;
+import ro.teamnet.zth.api.database.DBManager;
+import ro.teamnet.zth.api.database.DBProperties;
+
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -8,9 +12,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import ro.teamnet.zth.api.annotations.Id;
-import ro.teamnet.zth.api.database.DBManager;
-import ro.teamnet.zth.api.database.DBProperties;
 
 public class EntityManagerImpl implements EntityManager {
 
@@ -27,9 +28,9 @@ public class EntityManagerImpl implements EntityManager {
 
             Integer lastId;
             //set values for columns
-            for(ColumnInfo column : columns) {
-                if(column.isId()) {
-                    if(DBProperties.IS_ORACLE) {
+            for (ColumnInfo column : columns) {
+                if (column.isId()) {
+                    if (DBProperties.IS_ORACLE) {
                         //used for Oracle DB
                         lastId = getSeqNextValue().intValue();
                         column.setValue(lastId);
@@ -48,7 +49,7 @@ public class EntityManagerImpl implements EntityManager {
             //execute sql
             stmt.executeUpdate(sql);
 
-            if(DBProperties.IS_MYSQL) {
+            if (DBProperties.IS_MYSQL) {
                 //get last id (used for MySQL)
                 sql = "select LAST_INSERT_ID()";
                 ResultSet rs = stmt.executeQuery(sql);
@@ -58,7 +59,7 @@ public class EntityManagerImpl implements EntityManager {
             }
 
             return (T) findById(entity.getClass(), lastId);
-        } catch(SQLException | ClassNotFoundException | NoSuchFieldException | IllegalAccessException e) {
+        } catch (SQLException | ClassNotFoundException | NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();
             return null;
         }
@@ -74,7 +75,7 @@ public class EntityManagerImpl implements EntityManager {
             //get columns
             List<ColumnInfo> columns = EntityUtils.getColumns(entity.getClass());
             //set values for columns
-            for(ColumnInfo column : columns) {
+            for (ColumnInfo column : columns) {
                 Field field = entity.getClass().getDeclaredField(column.getColumnName());
                 field.setAccessible(true);
                 Object value = field.get(entity);
@@ -82,11 +83,11 @@ public class EntityManagerImpl implements EntityManager {
             }
             Condition condition = new Condition(columns.get(0).getDbName(), columns.get(0).getValue());
             query = query.setTableName(tableName).setQueryType(QueryType.UPDATE).addQueryColumns(columns)
-                .addCondition(condition);
+                    .addCondition(condition);
             String sql = query.createQuery();
             stmt.executeUpdate(sql);
             return entity;
-        } catch(SQLException | ClassNotFoundException | NoSuchFieldException | IllegalAccessException e) {
+        } catch (SQLException | ClassNotFoundException | NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();
             return null;
         }
@@ -94,13 +95,13 @@ public class EntityManagerImpl implements EntityManager {
 
     @Override
     public void delete(Object entity) {
-        try( Connection conn = DBManager.getConnection();
-             Statement stmt = conn.createStatement()){
+        try (Connection conn = DBManager.getConnection();
+             Statement stmt = conn.createStatement()) {
             QueryBuilder query = new QueryBuilder();
             String tableName = EntityUtils.getTableName(entity.getClass());
             List<ColumnInfo> columns = EntityUtils.getColumns(entity.getClass());
 
-            for(ColumnInfo column : columns) {
+            for (ColumnInfo column : columns) {
                 Field field = entity.getClass().getDeclaredField(column.getColumnName());
                 field.setAccessible(true);
                 Object value = field.get(entity);
@@ -117,8 +118,8 @@ public class EntityManagerImpl implements EntityManager {
 
     private Long getSeqNextValue() throws SQLException, ClassNotFoundException {
         ResultSet rs;
-        try(Connection conn = DBManager.getConnection();
-            Statement stmt = conn.createStatement()){
+        try (Connection conn = DBManager.getConnection();
+             Statement stmt = conn.createStatement()) {
             String sql = "select ZTH_SEQ.nextval from dual";
             rs = stmt.executeQuery(sql);
             rs.next();
@@ -138,14 +139,14 @@ public class EntityManagerImpl implements EntityManager {
 
             Condition condition = new Condition(fieldsByAnnotations.get(0).getAnnotation(Id.class).name(), id);
             query.setTableName(tableName).addQueryColumns(columns).setQueryType(QueryType.SELECT).addCondition(
-                condition);
+                    condition);
             String sql = query.createQuery();
             ResultSet rs = stmt.executeQuery(sql);
 
             T instance = null;
-            if(rs.next()) {
+            if (rs.next()) {
                 instance = entityClass.newInstance();
-                for(ColumnInfo column : columns) {
+                for (ColumnInfo column : columns) {
                     column.setValue(rs.getObject(column.getDbName()));
                     Field field = instance.getClass().getDeclaredField(column.getColumnName());
                     field.setAccessible(true);
@@ -153,7 +154,7 @@ public class EntityManagerImpl implements EntityManager {
                 }
             }
             return instance;
-        } catch(Exception ex) {
+        } catch (Exception ex) {
             ex.printStackTrace();
             return null;
         }
@@ -161,32 +162,38 @@ public class EntityManagerImpl implements EntityManager {
 
     @Override
     public <T> List<T> findAll(Class<T> entityClass) {
-        try (Connection conn = DBManager.getConnection();
-             Statement stmt = conn.createStatement()){
-
-            List<T> rows = new ArrayList<>();
+        List<T> resultList = null;
+        try (Connection conn = DBManager.getConnection()) {
+            Statement stmt = conn.createStatement();
             QueryBuilder query = new QueryBuilder();
+            resultList = new ArrayList<T>();
+            T result = null;
             String tableName = EntityUtils.getTableName(entityClass);
             List<ColumnInfo> columns = EntityUtils.getColumns(entityClass);
             query.setTableName(tableName).addQueryColumns(columns).setQueryType(QueryType.SELECT);
             String sql = query.createQuery();
             ResultSet rs = stmt.executeQuery(sql);
-
-            T instance = entityClass.newInstance();
             while (rs.next()) {
-                for (ColumnInfo column : columns) {
-                    column.setValue(rs.getObject(column.getDbName()));
-                    Field field = instance.getClass().getDeclaredField(column.getColumnName());
-                    field.setAccessible(true);
-                    field.set(instance, EntityUtils.castFromSqlType(column.getValue(), column.getColumnType()));
+                result = entityClass.newInstance();
+                for (ColumnInfo c : columns) {
+                    Field f = result.getClass().getDeclaredField(c.getColumnName());
+                    f.setAccessible(true);
+                    f.set(result, rs.getObject(c.getDbName()));
                 }
-                rows.add(instance);
+                resultList.add(result);
             }
-            return rows;
-        } catch (SQLException | ClassNotFoundException | NoSuchFieldException | IllegalAccessException | InstantiationException e) {
-            e.printStackTrace();
-            return null;
+        } catch (SQLException e1) {
+            e1.printStackTrace();
+        } catch (NoSuchFieldException e1) {
+            e1.printStackTrace();
+        } catch (InstantiationException e1) {
+            e1.printStackTrace();
+        } catch (IllegalAccessException e1) {
+            e1.printStackTrace();
+        } catch (ClassNotFoundException e1) {
+            e1.printStackTrace();
         }
+        return resultList;
     }
 
 

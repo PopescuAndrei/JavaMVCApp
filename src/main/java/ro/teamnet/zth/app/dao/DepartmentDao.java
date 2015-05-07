@@ -56,4 +56,5 @@ public class DepartmentDao {
         return entityManager.findById(Department.class, id);
     }
 
+
 }

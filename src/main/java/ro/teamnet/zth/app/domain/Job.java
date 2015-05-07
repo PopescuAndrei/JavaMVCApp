@@ -86,4 +86,14 @@ public class Job {
         result = 31 * result + (maxSalary != null ? maxSalary.hashCode() : 0);
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "Job{" +
+                "id=" + id +
+                ", jobTitle='" + jobTitle + '\'' +
+                ", minSalary=" + minSalary +
+                ", maxSalary=" + maxSalary +
+                '}';
+    }
 }
